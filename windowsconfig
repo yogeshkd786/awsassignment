@@ -1,0 +1,24 @@
+<powershell>
+net user Administrator "admin@1234"
+$InetPubRoot = "D:\inetpub"
+$InetPubLog = "D:\inetpub\Log"
+$InetPubWWWRoot = "D:\inetpub\wwwroot"
+Initialize-Disk -Number 1
+New-Partition -DiskNumber 1 -UseMaximumSize -AssignDriveLetter | Format-Volume -FileSystem NTFS -NewFileSystemLabel webdrive
+Install-WindowsFeature -name Web-Server,Web-Common-Http -IncludeManagementTools
+New-Item -Path $InetPubRoot -type directory -Force -ErrorAction SilentlyContinue
+New-Item -Path $InetPubLog -type directory -Force -ErrorAction SilentlyContinue
+New-Item -Path $InetPubWWWRoot -type directory -Force -ErrorAction SilentlyContinue
+$Command = "%windir%\system32\inetsrv\appcmd set config -section:system.applicationHost/sites -siteDefaults.logfile.directory:$InetPubLog"
+cmd.exe /c $Command
+$Command = "%windir%\system32\inetsrv\appcmd set config -section:system.applicationHost/log -centralBinaryLogFile.directory:$InetPubLog"
+cmd.exe /c $Command
+$Command = "%windir%\system32\inetsrv\appcmd set config -section:system.applicationHost/log -centralW3CLogFile.directory:$InetPubLog"
+cmd.exe /c $Command
+c:\Windows\system32\inetsrv\appcmd set vdirs "Default Web Site/" /physicalpath:"D:\inetpub\wwwroot"
+$Command = "IISRESET"
+Invoke-Expression -Command $Command
+New-Item g:\inetpub\wwwroot\index.html -ItemType File
+Set-Content D:\inetpub\wwwroot\index.html '<html><body><h1>Hello AWS World –running on Windows - on port 80</h1></body></html>'
+
+</powershell>

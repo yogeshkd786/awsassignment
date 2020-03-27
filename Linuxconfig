@@ -1,0 +1,32 @@
+#cloud-config
+repo_update: true
+repo_upgrade: all
+
+packages:
+ - 
+
+runcmd:
+ - sudo systemctl start httpd
+ - sudo systemctl enable httpd
+ - (echo n; echo p; echo 1; echo ''; echo ''; echo w; echo q) | sudo fdisk /dev/sdb
+ - sudo mkdir -p /webpage
+ - sudo sh -c 'echo /dev/sdb1 /webpage ext4 defaults >> /etc/fstab'
+ - sudo mkfs.ext4 /dev/sdb1
+ - sudo mount -a
+ - sudo usermod -a -G apache ec2-user
+ - [ sh, -c, 'echo "<html><body><h1>Hello AWS World – running on Linux – on port 80</h1></body></html>" > /webpage/index.html' ]
+ - sudo chown -R ec2-user:apache /webpage
+ - sudo sed -i -e 's+/var/www/html+/webpage+g' /etc/httpd/conf/httpd.conf
+ - sudo reboot
+
+
+
+
+ #cloud-config
+repo_update: true
+repo_upgrade: all
+
+runcmd:
+ - sudo amazon-linux-extras install -y ansible2
+ - wget https://ansiblep-playbooks-assignment.s3-ap-southeast-1.amazonaws.com/webserver_playbook.yaml
+ - ansible-playbook /webserver_playbook.yaml

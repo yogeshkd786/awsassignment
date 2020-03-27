@@ -1,0 +1,57 @@
+---
+- name: Setup an httpd webserver on AWS
+  hosts: localhost
+  connection: local
+  become: true
+  tasks:
+  - name: Install apache packages
+    yum:
+      name: httpd
+      state: present
+  - name: ensure httpd is running
+    service:
+      name: httpd
+      state: started
+  - name: Create a new primary partition
+    parted:
+     device: /dev/sdb
+     number: 1
+     state: present
+  - name: Add the user 'ec2-user' to group 'apache'
+    user:
+     name: ec2-user
+     comment: ec2-user aws account
+     groups: apache
+     append: yes
+  - name: Creates directory
+    file:
+     path: /webpage
+     state: directory
+     owner: ec2-user
+     group: apache
+     mode: 0775
+     recurse: yes
+  - name: Create a ext4 filesystem on /dev/sdb and check disk blocks
+    filesystem:
+     fstype: ext4
+     dev: /dev/sdb1
+  - name: Mount up device by label
+    mount:
+     path: /webpage
+     src: /dev/sdb1
+     fstype: ext4
+     state: mounted
+  - name: create index.html file
+    lineinfile:
+     path: /webpage/index.html
+     line: '<html><body><h1>Hello AWS World - running on Linux - on port 80</h1><img src="http://d3v4fqp7r6bc6k.cloudfront.net/screen-shot1.png" height="500" width="500"><br/><img src="http://d3v4fqp7r6bc6k.cloudfront.net/screen-shot2.png" height="500" width="500"><br/><img src="http://d3v4fqp7r6bc6k.cloudfront.net/screen-shot3.png" height="500" width="500"></body></html>'
+     create: yes
+  - name: Replace contents in httpd.conf file
+    replace:
+     path: /etc/httpd/conf/httpd.conf
+     regexp: '/var/www/html'
+     replace: '/webpage'
+  - name: Restart service httpd, in all cases
+    service:
+     name: httpd
+     state: restarted
